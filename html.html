@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeLab - 在线编程平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/lib/codemirror.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/lib/codemirror.css">
+    <script src="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/mode/python/python.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/mode/javascript/javascript.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/mode/htmlmixed/htmlmixed.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/mode/css/css.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/codemirror/CodeMirror@5/addon/selection/active-line.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --editor-bg: #0f172a;
+            --output-bg: #1e293b;
+            --sign-in: #f59e0b;
+            --sign-in-light: #fbbf24;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            font-size: 14px;
+            line-height: 1.5;
+            border-radius: 0.5rem;
+        }
+
+        .CodeMirror-focused {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .cm-s-monokai {
+            background-color: var(--editor-bg) !important;
+            color: #e2e8f0 !important;
+        }
+
+        .run-btn {
+            transition: all 0.2s ease;
+        }
+
+        .run-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .language-selector {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.25rem;
+        }
+
+        /* 签到功能样式 */
+        .sign-in-btn {
+            background-color: var(--sign-in);
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .sign-in-btn:hover {
+            background-color: var(--sign-in-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        }
+
+        .sign-in-btn.disabled {
+            background-color: var(--gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .sign-in-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background-color: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            margin-left: 1rem;
+        }
+
+        .sign-in-stat {
+            text-align: center;
+            padding: 0 0.8rem;
+            border-right: 1px solid var(--gray-200);
+        }
+
+        .sign-in-stat:last-child {
+            border-right: none;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .sign-in-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            color: var(--sign-in);
+            margin-bottom: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-desc {
+            color: var(--gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .sign-in-history {
+            margin-top: 2rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .history-item {
+            padding: 0.6rem 1rem;
+            border-radius: 0.4rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .history-item.signed {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .history-item.unsigned {
+            background-color: rgba(153, 171, 189, 0.1);
+            color: var(--gray);
+        }
+
+        .history-date {
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .sign-in-info {
+                display: none;
+            }
+
+            .sign-in-mobile {
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="#" class="flex items-center space-x-2">
+                        <i class="fa fa-code text-2xl
